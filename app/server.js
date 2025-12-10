@@ -15,5 +15,5 @@ server.listen(port, hostname, () => {
 
 
 mongoose.connect(process.env.MONGO_URI)
-    .then(() => console.log('MongoDB connected'))
+    .then(() => console.log('MongoDB connected22'))
     .catch(err => console.log(err));

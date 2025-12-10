@@ -1,73 +1,117 @@
 const Event = require('../models/Event');
+const User = require('../models/User');
+
+exports.getAllEvents = async (req, res) => {
+    try {
+        const currentUserId = req.userId; // can be null if the user is not logged
+        
+        const events = await Event.find().populate('organizer', 'name');
+        
+        let userSavedEvents = [];
+        if (currentUserId) {
+            const user = await User.findById(currentUserId);
+            userSavedEvents = user.savedEvents.map(id => id.toString());
+        }
+
+        const formattedEvents = events.map(event => {
+            const isAttending = currentUserId ? event.attendeesList.includes(currentUserId) : false;
+            const isSaved = currentUserId ? userSavedEvents.includes(event._id.toString()) : false;
+
+            return {
+                id: event._id,
+                title: event.title,
+                description: event.description,
+                date: event.date,
+                time: event.time,
+                location: event.location,
+                category: event.category,
+                organizer: event.organizer ? event.organizer.name : "Unknown",
+                organizerId: event.organizer ? event.organizer._id : null,
+                imageUrl: event.imageUrl,
+                attendees: event.attendeesList.length,
+                maxAttendees: event.maxAttendees,
+                isAttending: isAttending,
+                isSaved: isSaved
+            };
+        });
+
+        res.status(200).json(formattedEvents);
+
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+};
 
 exports.createEvent = async (req, res) => {
     try {
-        const { title, description, date, location, type, organizerId } = req.body;
-        
+
         const newEvent = new Event({
-            title,
-            description,
-            date,
-            location,
-            type,
-            organizer: organizerId, // to do: check id!!!!
-            status: 'pending' // Default
+            ...req.body,
+            organizer: req.userId
         });
-
         await newEvent.save();
-        res.status(200).json({ "message": "Event created, waiting for validation", "id": newEvent._id });
-
+        res.status(201).json(newEvent);
     } catch (error) {
         res.status(400).json({ error: error.message });
     }
 };
 
-exports.getAllEvents = async (req, res) => {
+exports.toggleAttendance = async (req, res) => {
     try {
-        // Filtering logic to do more
-        const { type, status } = req.query;
-        let query = {};
+        const eventId = req.params.id;
+        const userId = req.userId;
 
-        if (type) query.type = type;
-        if (status) query.status = status; 
-        
-        const events = await Event.find(query).populate('organizer', 'name organizationName');
-        res.json(events);
+        const event = await Event.findById(eventId);
+        if (!event) return res.status(404).json({ message: "Event not found" });
+
+        const index = event.attendeesList.indexOf(userId);
+        let isAttending = false;
+
+        if (index === -1) {
+            event.attendeesList.push(userId);
+            isAttending = true;
+        } else {
+            event.attendeesList.splice(index, 1);
+            isAttending = false;
+        }
+
+        await event.save();
+
+        res.status(200).json({
+            success: true,
+            isAttending,
+            attendees: event.attendeesList.length
+        });
+
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
 };
 
-exports.getEvent = async (req, res) => {
+exports.toggleSave = async (req, res) => {
     try {
-        const { id } = req.params;
-        const event = await Event.findById(id).populate('materials');
-        if (!event) return res.status(404).json({ error: "Event not found" });
-        res.json(event);
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
-};
+        const eventId = req.params.id;
+        const userId = req.userId;
 
-exports.updateEvent = async (req, res) => {
-    try {
-        // Editing / Admin validation 
-        const { id } = req.params;
-        const updatedEvent = await Event.findByIdAndUpdate(id, req.body, { new: true });
-        
-        if (!updatedEvent) return res.status(404).json({ error: "Event not found" });
+        const user = await User.findById(userId);
+        const index = user.savedEvents.indexOf(eventId);
+        let isSaved = false;
 
-        res.status(200).json({ "message": "Event updated successfully", "event": updatedEvent });
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
-};
+        if (index === -1) {
+            user.savedEvents.push(eventId);
+            isSaved = true;
+        } else {
+            user.savedEvents.splice(index, 1);
+            isSaved = false;
+        }
 
-exports.deleteEvent = async (req, res) => {
-    try {
-        const { id } = req.params;
-        await Event.findByIdAndDelete(id);
-        res.status(200).json({ "message": "Event deleted successfully" });
+        await user.save();
+
+        res.status(200).json({
+            success: true,
+            isSaved
+        });
+
     } catch (error) {
         res.status(500).json({ error: error.message });
     }

@@ -1,9 +1,10 @@
 const express = require('express');
 const userRouter = express.Router();
-const userController = require("../controllers/userController");
+const authController = require('../controllers/userController');
+const authMiddleware = require('../middleware/authMiddleware');
 
-userRouter.post('/register', userController.createUser);
-userRouter.post('/login', userController.login);
-userRouter.get('/', userController.getAllUsers); // Admin usage
+userRouter.post('/login', authController.login);
+userRouter.post('/register', authController.register);
+userRouter.get('/me', authMiddleware.requireAuth, authController.getMe); // needs token
 
 module.exports = userRouter;

@@ -11,7 +11,7 @@ app.use(express.json());
 app.use(cors());
 
 app.use("/api/events", eventRoutes);
-app.use("/api/users", userRoutes);
+app.use("/api/auth", userRoutes);
 app.use("/api/tickets", ticketRoutes);
 
 module.exports = app;

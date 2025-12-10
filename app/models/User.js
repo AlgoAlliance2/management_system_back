@@ -6,14 +6,11 @@ const userSchema = new mongoose.Schema({
     password: { type: String, required: true },
     role: { 
         type: String, 
-        enum: ['student', 'organizer', 'admin'], 
+        enum: ['student', 'professor', 'organizer', 'admin'],
         default: 'student' 
     },
-    // Student 
-    faculty: { type: String },
-    yearOfStudy: { type: Number },
-    // Organizer
-    organizationName: { type: String }
+    // Pentru funcționalitatea "Save/Bookmark"
+    savedEvents: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Event' }]
 }, { versionKey: false });
 
 module.exports = mongoose.model('User', userSchema);
