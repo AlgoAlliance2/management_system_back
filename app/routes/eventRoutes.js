@@ -1,28 +1,16 @@
-const express = require("express");
+const express = require('express');
 const eventRouter = express.Router();
-const eventController = require("../controllers/eventController");
-const authMiddleware = require("../middleware/authMiddleware");
+const eventController = require('../controllers/eventController');
+const authMiddleware = require('../middleware/authMiddleware');
 
-eventRouter.get("/", authMiddleware.optionalAuth, eventController.getAllEvents); // get all events allows userId=null
-eventRouter.post("/", authMiddleware.requireAuth, eventController.createEvent); // create a new event
+eventRouter.get('/', authMiddleware.optionalAuth, eventController.getAllEvents);// get all events allows userId=null 
+eventRouter.post('/', authMiddleware.requireAuth, eventController.createEvent);// create a new event
 
-eventRouter.post(
-  "/:id/attend",
-  authMiddleware.requireAuth,
-  eventController.toggleAttendance
-); // Lets a user join or leave an event’s attendee list
-eventRouter.post(
-  "/:id/save",
-  authMiddleware.requireAuth,
-  eventController.toggleSave
-); // Lets a user save or unsave an event to their personal list
+eventRouter.post('/:id/attend', authMiddleware.requireAuth, eventController.toggleAttendance);// Lets a user join or leave an event’s attendee list
+eventRouter.post('/:id/save', authMiddleware.requireAuth, eventController.toggleSave);// Lets a user save or unsave an event to their personal list
 
-eventRouter.get("/:id", eventController.getEventById);
+eventRouter.get('/:id', eventController.getEventById);
 
-eventRouter.put(
-  "/:id",
-  authMiddleware.requireAuth,
-  eventController.updateEvent
-);
+eventRouter.patch('/:id', authMiddleware.requireAuth, eventController.updateEvent);
 
 module.exports = eventRouter;
