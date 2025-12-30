@@ -9,4 +9,8 @@ eventRouter.post('/', authMiddleware.requireAuth, eventController.createEvent);/
 eventRouter.post('/:id/attend', authMiddleware.requireAuth, eventController.toggleAttendance);// Lets a user join or leave an event’s attendee list
 eventRouter.post('/:id/save', authMiddleware.requireAuth, eventController.toggleSave);// Lets a user save or unsave an event to their personal list
 
+eventRouter.get('/:id', eventController.getEventById);
+
+eventRouter.patch('/:id', authMiddleware.requireAuth, eventController.updateEvent);
+
 module.exports = eventRouter;
