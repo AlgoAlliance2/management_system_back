@@ -4,10 +4,8 @@ const userController = require('../controllers/userController');
 const authMiddleware = require('../middleware/authMiddleware');
 
 
+// router.get('/', authMiddleware.requireAuth, userController.getAllUsers);
 
-//userController.get('/', authMiddleware.requireAuth, );// Fetch all users, Auth is Required to see all users
+router.patch('/:id/role', authMiddleware.requireAuth, userController.updateUserRole);
 
-
-//userController.patch('/:id/role', authMiddleware.requireAuth,  );//Update a user's role, Auth is Required to edit an user
-
-module.exports = userController;
+module.exports = router;
