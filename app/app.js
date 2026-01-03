@@ -5,7 +5,7 @@ const cors = require('cors');
 const eventRoutes = require("./routes/eventRoutes");
 const authroutes = require("./routes/authRoutes");
 const ticketRoutes = require("./routes/ticketRoutes");
-const userController = require("./routes/userRoutes");
+const userRoutes = require("./routes/userRoutes");
 
 
 
@@ -15,7 +15,7 @@ app.use(cors());
 
 app.use("/api/events", eventRoutes);
 app.use("/api/auth", authroutes);
-//app.use("/api/users", userController);// Work in progres
+app.use("/api/users", userRoutes);
 //app.use("/api/notifications", );//Work in progres
 app.use("/api/tickets", ticketRoutes);// experimental version, will need redoing
 

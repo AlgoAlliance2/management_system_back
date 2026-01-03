@@ -5,9 +5,11 @@ const authMiddleware = require('../middleware/authMiddleware');
 
 
 
-//userController.get('/', authMiddleware.requireAuth, );// Fetch all users, Auth is Required to see all users
+// Fetch all users, Auth is Required to see all users
+router.get('/', authMiddleware.requireAuth, userController.getAllUsers);
 
 
-//userController.patch('/:id/role', authMiddleware.requireAuth,  );//Update a user's role, Auth is Required to edit an user
+//Update a user's role, Auth is Required to edit an user
+router.patch('/:id/role', authMiddleware.requireAuth, userController.updateRole);
 
-module.exports = userController;
+module.exports = router;
