@@ -6,4 +6,6 @@ const authMiddleware = require('../middleware/authMiddleware');
 // Fetch all users, Auth is Required to see all users
 router.get('/', authMiddleware.requireAuth, userController.getAllUsers);
 
+router.patch('/:id/role', authMiddleware.requireAuth, userController.updateUserRole);
+
 module.exports = router;
