@@ -3,8 +3,8 @@ const router = express.Router();
 const userController = require('../controllers/userController');
 const authMiddleware = require('../middleware/authMiddleware');
 
-
-// router.get('/', authMiddleware.requireAuth, userController.getAllUsers);
+// Fetch all users, Auth is Required to see all users
+router.get('/', authMiddleware.requireAuth, userController.getAllUsers);
 
 router.patch('/:id/role', authMiddleware.requireAuth, userController.updateUserRole);
 
