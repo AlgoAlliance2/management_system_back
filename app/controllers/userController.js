@@ -15,7 +15,8 @@ exports.getAllUsers = async (req, res) => {
     } catch (error) {
         console.error("Error fetching users:", error);
         res.status(500).json({ message: 'Error fetching users', error: error.message });
-  
+    }
+};
 exports.updateUserRole = async (req, res) => {
     try {
         const targetUserId = req.params.id; // The user to be updated
