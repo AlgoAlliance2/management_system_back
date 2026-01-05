@@ -14,5 +14,7 @@ eventRouter.get('/:id', eventController.getEventById);
 eventRouter.patch('/:id', authMiddleware.requireAuth, eventController.updateEvent);
 
 //eventRouter.delete();// needs implementation
+eventRouter.delete('/:id', authMiddleware.requireAuth, eventController.deleteEvent);
+
 
 module.exports = eventRouter;
