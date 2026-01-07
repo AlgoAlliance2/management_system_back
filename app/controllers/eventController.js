@@ -99,6 +99,43 @@ exports.toggleSave = async (req, res) => {
     }
 };
 
+exports.deleteEvent = async (req, res) => {
+  try {
+    const eventId = req.params.id;
+    const userId = req.userId; // vine din middleware-ul de auth
+
+    const event = await Event.findById(eventId);
+    if (!event) {
+      return res.status(404).json({ message: "Evenimentul nu a fost găsit" });
+    }
+
+    // Doar organizer-ul are voie să șteargă
+    if (event.organizer.toString() !== userId) {
+      return res.status(403).json({
+        message: "Nu ai permisiunea să ștergi acest eveniment",
+      });
+    }
+
+    // Curăță referințele din savedEvents (ca să nu rămână id-uri moarte)
+    await User.updateMany(
+      { savedEvents: eventId },
+      { $pull: { savedEvents: eventId } }
+    );
+
+    // Șterge evenimentul
+    await Event.findByIdAndDelete(eventId);
+
+    return res.status(200).json({
+      success: true,
+      message: "Eveniment șters cu succes",
+    });
+  } catch (error) {
+    console.error("Eroare la ștergerea evenimentului:", error);
+    res.status(500).json({ message: "Eroare server" });
+  }
+};
+
+
 exports.updateEvent = async (req, res) => {
   try {
     const eventId = req.params.id;
