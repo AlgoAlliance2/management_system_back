@@ -4,7 +4,6 @@ const cors = require('cors');
 // Import routes
 const eventRoutes = require("./routes/eventRoutes");
 const authroutes = require("./routes/authRoutes");
-const ticketRoutes = require("./routes/ticketRoutes");
 const userRoutes = require("./routes/userRoutes");
 
 
@@ -17,6 +16,5 @@ app.use("/api/events", eventRoutes);
 app.use("/api/auth", authroutes);
 app.use("/api/users", userRoutes);
 //app.use("/api/notifications", );//Work in progres
-app.use("/api/tickets", ticketRoutes);// experimental version, will need redoing
 
 module.exports = app;

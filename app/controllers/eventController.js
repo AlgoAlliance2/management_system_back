@@ -3,13 +3,67 @@ const User = require('../models/User');
 
 exports.getAllEvents = async (req, res) => {
     try {
-        const currentUserId = req.userId; // can be null if the user is not logged
-        const events = await Event.find().populate('organizer', 'name');
+        const currentUserId = req.userId; 
+        // sortade dupa cel mai nou
+        const events = await Event.find().populate('organizer', 'name').sort({ date: 1 });
+        
         let userSavedEvents = [];
         if (currentUserId) {
             const user = await User.findById(currentUserId);
-            userSavedEvents = user.savedEvents.map(id => id.toString());
+            if (user) {
+                userSavedEvents = user.savedEvents.map(id => id.toString());
+            }
         }
+
+        const formattedEvents = events.map(event => {
+            const isAttending = currentUserId ? event.attendeesList.includes(currentUserId) : false;
+            const isSaved = currentUserId ? userSavedEvents.includes(event._id.toString()) : false;
+            
+            return {
+                id: event._id,
+                title: event.title,
+                description: event.description,
+                date: event.date,
+                time: event.time,
+                location: event.location,
+                category: event.category,
+                organizer: event.organizer ? event.organizer.name : 'Unknown',
+                organizerId: event.organizer ? event.organizer._id : null,
+                imageUrl: event.imageUrl,
+                attendees: event.attendeesList.length,
+                maxAttendees: event.maxAttendees,
+                isAttending: isAttending,
+                isSaved: isSaved,
+                status: event.status,
+                rejectionReason: event.rejectionReason,
+                comments: event.comments
+            };
+        });
+
+        res.status(200).json(formattedEvents);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+};
+
+
+exports.getApprovedEvents = async (req, res) => {
+    try {
+        const currentUserId = req.userId;
+
+        
+        const events = await Event.find({ status: 'approved' })
+            .populate('organizer', 'name')
+            .sort({ date: 1 });
+
+        let userSavedEvents = [];
+        if (currentUserId) {
+            const user = await User.findById(currentUserId);
+            if (user) {
+                userSavedEvents = user.savedEvents.map(id => id.toString());
+            }
+        }
+
         const formattedEvents = events.map(event => {
             const isAttending = currentUserId ? event.attendeesList.includes(currentUserId) : false;
             const isSaved = currentUserId ? userSavedEvents.includes(event._id.toString()) : false;
@@ -27,9 +81,12 @@ exports.getAllEvents = async (req, res) => {
                 attendees: event.attendeesList.length,
                 maxAttendees: event.maxAttendees,
                 isAttending: isAttending,
-                isSaved: isSaved
+                isSaved: isSaved,
+                status: event.status,
+                comments: event.comments
             };
         });
+
         res.status(200).json(formattedEvents);
     } catch (error) {
         res.status(500).json({ error: error.message });
@@ -201,7 +258,6 @@ exports.getEventById = async (req, res) => {
     if (!event) {
       return res.status(404).json({ message: "Evenimentul nu a fost găsit" });
     }
-
     // Formatează ca în getAllEvents (pentru consistență în frontend)
     const formattedEvent = {
       id: event._id,
@@ -216,13 +272,131 @@ exports.getEventById = async (req, res) => {
       imageUrl: event.imageUrl,
       attendees: event.attendeesList.length,
       maxAttendees: event.maxAttendees,
-      isAttending: false, // Nu calculăm aici, frontend-ul face
-      isSaved: false, // Idem
+      isAttending: false, 
+      isSaved: false,
+      // --- MAP NEW FIELDS ---
+      status: event.status,
+      rejectionReason: event.rejectionReason,
+      comments: event.comments
     };
 
     res.status(200).json({ event: formattedEvent });
   } catch (error) {
-    console.error("Eroare la încărcarea evenimentului:", error);
-    res.status(500).json({ message: "Eroare server" });
+    console.error("Error loading event:", error);
+    res.status(500).json({ message: "Server error" });
   }
+};
+
+exports.approveEvent = async (req, res) => {
+    try {
+        const eventId = req.params.id;
+        const userId = req.userId;
+
+        // Verifica sa fie admin
+        const user = await User.findById(userId);
+        if (!user || user.role !== 'admin') {
+            return res.status(403).json({ message: "Access denied. Only admins can approve events." });
+        }
+
+        const event = await Event.findByIdAndUpdate(
+            eventId,
+            { 
+                status: 'approved',
+                $unset: { rejectionReason: 1 }
+            },
+            { new: true }
+        );
+
+        if (!event) return res.status(404).json({ message: "Event not found" });
+
+        res.status(200).json(event);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+};
+
+exports.rejectEvent = async (req, res) => {
+    try {
+        const eventId = req.params.id;
+        const { reason } = req.body;
+        const userId = req.userId;
+
+        // Verifica sa fie admin
+        const user = await User.findById(userId);
+        if (!user || user.role !== 'admin') {
+            return res.status(403).json({ message: "Access denied. Only admins can reject events." });
+        }
+
+        if (!reason) {
+            return res.status(400).json({ message: "Rejection reason is required." });
+        }
+
+        const event = await Event.findByIdAndUpdate(
+            eventId,
+            { 
+                status: 'rejected',
+                rejectionReason: reason
+            },
+            { new: true }
+        );
+
+        if (!event) return res.status(404).json({ message: "Event not found" });
+
+        res.status(200).json(event);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+};
+
+exports.addComment = async (req, res) => {
+    try {
+        const eventId = req.params.id;
+        const { text } = req.body;
+        const userId = req.userId; 
+
+        if (!text) {
+            return res.status(400).json({ message: "Comment text is required" });
+        }
+
+        // Find the Event
+        const event = await Event.findById(eventId);
+        if (!event) {
+            return res.status(404).json({ message: "Event not found" });
+        }
+
+        // Find the User (we need their name for the comment)
+        const user = await User.findById(userId);
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
+        }
+
+        // Create the comment object
+        const newComment = {
+            userId: user._id,
+            userName: user.name,
+            text: text,
+            date: new Date()
+        };
+
+        // Push to array and save
+        event.comments.push(newComment);
+        await event.save();
+
+        // Return the newly created comment (Mongoose adds an _id automatically)
+        // We get the last item in the array to ensure we send back the one with the _id
+        const addedComment = event.comments[event.comments.length - 1];
+
+        // Format it to match Frontend interface (id instead of _id)
+        res.status(201).json({
+            id: addedComment._id,
+            userId: addedComment.userId,
+            userName: addedComment.userName,
+            text: addedComment.text,
+            date: addedComment.date
+        });
+
+    } catch (error) {
+        console.error("Error adding comment:", error);
+        res.status(500).json({ error: "Server error while adding comment" });
+    }
 };

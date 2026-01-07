@@ -1,10 +1,11 @@
 const mongoose = require('mongoose');
 
-// Material schema doesn't exist without an event
-const materialSchema = new mongoose.Schema({
-    fileName: {type: String},
-    fileType: {type: String}, // PDF, PPT, etc.
-    url: {type: String}
+// Schema pentru comentari 
+const commentSchema = new mongoose.Schema({
+    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+    userName: { type: String, required: true },
+    text: { type: String, required: true },
+    date: { type: Date, default: Date.now }
 });
 
 const eventSchema = new mongoose.Schema({
@@ -21,6 +22,14 @@ const eventSchema = new mongoose.Schema({
     organizer: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
     imageUrl: { type: String }, // URL string
     maxAttendees: { type: Number, default: 100 },
+
+    status: { 
+        type: String, 
+        enum: ['pending', 'approved', 'rejected'], 
+        default: 'pending' // pending este default
+    },
+    rejectionReason: { type: String }, // optional doar daca este refuzat
+    comments: [commentSchema], // lista de comentarii
     
     // Lista de studenti inscrisi (pentru calculul isAttending si numarul total)
     attendeesList: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }] 
