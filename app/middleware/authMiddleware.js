@@ -1,6 +1,8 @@
 const jwt = require('jsonwebtoken');
 
-// User MUST be logged in
+
+const JWT_SECRET = process.env.JWT_SECRET || 'PlEaSe_SeTuP_tHe_EnV_fIlE';//SETEAZA FISIERUL ENV!!!!
+
 exports.requireAuth = (req, res, next) => {
     const token = req.headers.authorization?.split(' ')[1];
 
@@ -9,8 +11,7 @@ exports.requireAuth = (req, res, next) => {
     }
 
     try {
-        
-        const decoded = jwt.verify(token, 'temp_secret_key(o_o)');
+        const decoded = jwt.verify(token, JWT_SECRET);
         req.userId = decoded.userId;
         req.role = decoded.role;
         next(); 
@@ -19,13 +20,12 @@ exports.requireAuth = (req, res, next) => {
     }
 };
 
-// If user has a token, we identify them. If not, they are a guest.
 exports.optionalAuth = (req, res, next) => {
     const token = req.headers.authorization?.split(' ')[1];
     
     if (token) {
         try {
-            const decoded = jwt.verify(token, 'temp_secret_key(o_o)');
+            const decoded = jwt.verify(token, JWT_SECRET);
             req.userId = decoded.userId;
         } catch (error) {
             console.log("Optional auth failed:", error.message);

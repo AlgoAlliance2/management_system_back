@@ -1,5 +1,6 @@
 const Event = require('../models/Event');
 const User = require('../models/User');
+const { createNotification } = require('./notificationController');
 
 exports.getAllEvents = async (req, res) => {
     try {
@@ -309,6 +310,17 @@ exports.approveEvent = async (req, res) => {
 
         if (!event) return res.status(404).json({ message: "Event not found" });
 
+
+        if (event) {
+            await createNotification(
+                event.organizer,
+                'status_update',
+                'Eveniment Aprobat!',
+                `Evenimentul tău "${event.title}" a fost aprobat și este acum public.`,
+                event._id
+            );
+        }
+
         res.status(200).json(event);
     } catch (error) {
         res.status(500).json({ error: error.message });
@@ -348,6 +360,61 @@ exports.rejectEvent = async (req, res) => {
     }
 };
 
+
+
+exports.resubmitEvent = async (req, res) => {
+    try {
+        const eventId = req.params.id;
+        const userId = req.userId;
+
+        const event = await Event.findById(eventId);
+        if (!event) {
+            return res.status(404).json({ message: "Event not found" });
+        }
+
+        if (event.organizer.toString() !== userId) {
+            return res.status(403).json({ 
+                message: "Access denied. Only the organizer can resubmit this event." 
+            });
+        }
+
+        const updatedEvent = await Event.findByIdAndUpdate(
+            eventId,
+            { 
+                status: 'pending',
+                $unset: { rejectionReason: 1 } 
+            },
+            { new: true }
+        ).populate('organizer', 'name');
+
+        //Trimit notificare tuturor adminilor
+        const admins = await User.find({ role: 'admin' });
+
+        const notifTitle = "Eveniment Retrimis";
+        const notifMessage = `Organizatorul "${updatedEvent.organizer.name}" a retrimis evenimentul "${updatedEvent.title}" pentru aprobare.`;
+
+ 
+        const notificationPromises = admins.map(admin => 
+            createNotification(
+                admin._id,
+                'review_required',
+                notifTitle,
+                notifMessage,
+                updatedEvent._id
+            )
+        );
+
+        await Promise.all(notificationPromises);
+
+        res.status(200).json(updatedEvent);
+
+    } catch (error) {
+        console.error("Error resubmitting event:", error);
+        res.status(500).json({ error: "Server error while resubmitting event." });
+    }
+};
+
+
 exports.addComment = async (req, res) => {
     try {
         const eventId = req.params.id;
@@ -382,11 +449,8 @@ exports.addComment = async (req, res) => {
         event.comments.push(newComment);
         await event.save();
 
-        // Return the newly created comment (Mongoose adds an _id automatically)
-        // We get the last item in the array to ensure we send back the one with the _id
         const addedComment = event.comments[event.comments.length - 1];
 
-        // Format it to match Frontend interface (id instead of _id)
         res.status(201).json({
             id: addedComment._id,
             userId: addedComment.userId,
@@ -398,5 +462,56 @@ exports.addComment = async (req, res) => {
     } catch (error) {
         console.error("Error adding comment:", error);
         res.status(500).json({ error: "Server error while adding comment" });
+    }
+};
+
+
+
+
+exports.getAllUsersAtending = async (req, res) => {
+    try {
+        const eventId = req.params.id;
+        const requesterId = req.userId; 
+
+        const event = await Event.findById(eventId)
+            .populate({
+                path: 'attendeesList',
+                select: '-password' 
+            })
+            .lean();
+
+        if (!event) {
+            return res.status(404).json({ message: 'Event not found' });
+        }
+
+ 
+        const requester = await User.findById(requesterId);
+        
+        const isAdmin = requester.role === 'admin';
+        const isOrganizerOfEvent = event.organizer.toString() === requesterId;
+
+        if (!isAdmin && !isOrganizerOfEvent) {
+            return res.status(403).json({ 
+                message: "Access denied. Only the Admin or the Event Organizer can view the attendee list." 
+            });
+        }
+
+        const attendees = event.attendeesList;
+
+        if (!attendees || attendees.length === 0) {
+             return res.status(200).json([]); 
+        }
+
+        const formattedAttendees = attendees.map(user => ({
+            ...user,
+            id: user._id.toString(),
+            _id: undefined
+        }));
+
+        res.status(200).json(formattedAttendees);
+
+    } catch (error) {
+        console.error("Error fetching event attendees:", error);
+        res.status(500).json({ message: 'Error fetching attendees', error: error.message });
     }
 };

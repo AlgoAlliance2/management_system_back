@@ -1,16 +1,32 @@
 const User = require('../models/User');
 const jwt = require('jsonwebtoken');
+const bcrypt = require('bcryptjs');
 
-// for token generation
-const createToken = (id, role) => {
-    return jwt.sign({ userId: id, role: role }, 'temp_secret_key(o_o)', { expiresIn: '3d' });//inprove THIS!!!!!!
+
+const JWT_SECRET = process.env.JWT_SECRET || 'PlEaSe_SeTuP_tHe_EnV_fIlE!';//SETEAZA FISIERUL ENV!!!!
+
+const createToken = (id, role) => { 
+    return jwt.sign({ userId: id, role: role }, JWT_SECRET, { expiresIn: '3d' });
 };
 
 exports.register = async (req, res) => {
     try {
         const { name, email, password, role } = req.body;
-        // Password inprovement!!!!!
-        const user = new User({ name, email, password, role });
+
+        const existingUser = await User.findOne({ email });
+        if (existingUser) {
+            return res.status(400).json({ message: "Email already in use." });
+        }
+
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash(password, salt);
+
+        const user = new User({ 
+            name, 
+            email, 
+            password: hashedPassword,
+            role 
+        });
         await user.save();
         
         const token = createToken(user._id, user.role);
@@ -32,12 +48,17 @@ exports.register = async (req, res) => {
 exports.login = async (req, res) => {
     try {
         const { email, password } = req.body;
-        const user = await User.findOne({ email, password }); // Password inprovement!!!!!
+
+        const user = await User.findOne({ email }); 
 
         if (!user) {
-            return res.status(401).json({
-                message: "Email sau parola incorecta"
-            });
+            return res.status(401).json({ message: "Email sau parolă incorectă" });
+        }
+
+        const isMatch = await bcrypt.compare(password, user.password);
+
+        if (!isMatch) {
+            return res.status(401).json({ message: "Email sau parolă incorectă" });
         }
 
         const token = createToken(user._id, user.role);
@@ -58,10 +79,9 @@ exports.login = async (req, res) => {
 
 exports.getMe = async (req, res) => {
     try {
-        const user = await User.findById(req.userId);
-        if (!user) return res.status(404).json({ 
-            message: "User not found" 
-        });
+        const user = await User.findById(req.userId).select('-password');
+        
+        if (!user) return res.status(404).json({ message: "User not found" });
 
         res.status(200).json({
             id: user._id,

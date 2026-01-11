@@ -5,7 +5,7 @@ const cors = require('cors');
 const eventRoutes = require("./routes/eventRoutes");
 const authroutes = require("./routes/authRoutes");
 const userRoutes = require("./routes/userRoutes");
-
+const notificationRouter = require("./routes/notificationRoutes");
 
 
 const app = express();
@@ -15,6 +15,6 @@ app.use(cors());
 app.use("/api/events", eventRoutes);
 app.use("/api/auth", authroutes);
 app.use("/api/users", userRoutes);
-//app.use("/api/notifications", );//Work in progres
+app.use("/api/notifications", notificationRouter);
 
 module.exports = app;

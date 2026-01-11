@@ -5,6 +5,6 @@ const authMiddleware = require('../middleware/authMiddleware');
 
 authroutes.post('/login', authController.login);
 authroutes.post('/register', authController.register);
-authroutes.get('/me', authMiddleware.requireAuth, authController.getMe); // needs token
+authroutes.get('/me', authMiddleware.requireAuth, authController.getMe);
 
 module.exports = authroutes;

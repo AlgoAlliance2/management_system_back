@@ -10,6 +10,9 @@ eventRouter.get('/', authMiddleware.requireAuth, eventController.getAllEvents);
 
 eventRouter.post('/', authMiddleware.requireAuth, eventController.createEvent);// create a new event
 
+
+eventRouter.get('/allAttending/:id', authMiddleware.requireAuth, eventController.getAllUsersAtending);
+
 eventRouter.post('/:id/attend', authMiddleware.requireAuth, eventController.toggleAttendance);// Lets a user join or leave an event’s attendee list
 eventRouter.post('/:id/save', authMiddleware.requireAuth, eventController.toggleSave);// Lets a user save or unsave an event to their personal list
 
@@ -23,5 +26,6 @@ eventRouter.post('/:id/comments', authMiddleware.requireAuth, eventController.ad
 
 eventRouter.post('/:id/approve', authMiddleware.requireAuth, eventController.approveEvent);// Approve a pending event
 eventRouter.post('/:id/reject', authMiddleware.requireAuth, eventController.rejectEvent);// Reject a pending event
+eventRouter.post('/:id/resubmit', authMiddleware.requireAuth, eventController.resubmitEvent);//resubmit event
 
 module.exports = eventRouter;
