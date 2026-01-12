@@ -8,13 +8,13 @@ eventRouter.get('/approved', authMiddleware.optionalAuth, eventController.getApp
 eventRouter.get('/', authMiddleware.requireAuth, eventController.getAllEvents);
 
 
-eventRouter.post('/', authMiddleware.requireAuth, eventController.createEvent);// create a new event
+eventRouter.post('/', authMiddleware.requireAuth, eventController.createEvent);// crearea unui nou eveniment
 
 
 eventRouter.get('/allAttending/:id', authMiddleware.requireAuth, eventController.getAllUsersAtending);
 
-eventRouter.post('/:id/attend', authMiddleware.requireAuth, eventController.toggleAttendance);// Lets a user join or leave an event’s attendee list
-eventRouter.post('/:id/save', authMiddleware.requireAuth, eventController.toggleSave);// Lets a user save or unsave an event to their personal list
+eventRouter.post('/:id/attend', authMiddleware.requireAuth, eventController.toggleAttendance);
+eventRouter.post('/:id/save', authMiddleware.requireAuth, eventController.toggleSave);
 
 eventRouter.get('/:id', eventController.getEventById);
 
@@ -22,10 +22,10 @@ eventRouter.patch('/:id', authMiddleware.requireAuth, eventController.updateEven
 
 eventRouter.delete('/:id', authMiddleware.requireAuth, eventController.deleteEvent);
 
-eventRouter.post('/:id/comments', authMiddleware.requireAuth, eventController.addComment);// Add a comment to an event
+eventRouter.post('/:id/comments', authMiddleware.requireAuth, eventController.addComment);// Adauga un comentariu la un event
 
-eventRouter.post('/:id/approve', authMiddleware.requireAuth, eventController.approveEvent);// Approve a pending event
-eventRouter.post('/:id/reject', authMiddleware.requireAuth, eventController.rejectEvent);// Reject a pending event
-eventRouter.post('/:id/resubmit', authMiddleware.requireAuth, eventController.resubmitEvent);//resubmit event
+eventRouter.post('/:id/approve', authMiddleware.requireAuth, eventController.approveEvent);// Aprobarea unui eveniment
+eventRouter.post('/:id/reject', authMiddleware.requireAuth, eventController.rejectEvent);// Refuzarea unui eveniment
+eventRouter.post('/:id/resubmit', authMiddleware.requireAuth, eventController.resubmitEvent);// Retrimiterea unui eveniment
 
 module.exports = eventRouter;

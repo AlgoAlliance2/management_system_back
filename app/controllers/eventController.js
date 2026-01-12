@@ -167,20 +167,18 @@ exports.deleteEvent = async (req, res) => {
       return res.status(404).json({ message: "Evenimentul nu a fost găsit" });
     }
 
-    // Doar organizer-ul are voie să șteargă
+    // Verifica permisiunile
     if (event.organizer.toString() !== userId) {
       return res.status(403).json({
         message: "Nu ai permisiunea să ștergi acest eveniment",
       });
     }
 
-    // Curăță referințele din savedEvents (ca să nu rămână id-uri moarte)
     await User.updateMany(
       { savedEvents: eventId },
       { $pull: { savedEvents: eventId } }
     );
 
-    // Șterge evenimentul
     await Event.findByIdAndDelete(eventId);
 
     return res.status(200).json({
@@ -199,20 +197,17 @@ exports.updateEvent = async (req, res) => {
     const eventId = req.params.id;
     const userId = req.userId; // vine din middleware-ul de auth
 
-    // Găsește evenimentul
     const event = await Event.findById(eventId);
     if (!event) {
       return res.status(404).json({ message: "Evenimentul nu a fost găsit" });
     }
 
-    // Verifică dacă utilizatorul este organizer-ul evenimentului
     if (event.organizer.toString() !== userId) {
       return res.status(403).json({
         message: "Nu ai permisiunea să editezi acest eveniment",
       });
     }
 
-    // Actualizează doar câmpurile trimise în body
     const {
       title,
       description,
@@ -235,7 +230,24 @@ exports.updateEvent = async (req, res) => {
 
     await event.save();
 
-    // Populăm organizer-ul pentru răspuns consistent cu getAllEvents
+
+    if (event.attendeesList && event.attendeesList.length > 0) {
+        const notifTitle = "Eveniment Actualizat";
+        const notifMessage = `Organizatorul a modificat detaliile evenimentului "${event.title}". Verifică noile informații!`;
+
+        const notificationPromises = event.attendeesList.map(attendeeId => 
+            createNotification(
+                attendeeId,
+                'update', 
+                notifTitle,
+                notifMessage,
+                event._id
+            )
+        );
+
+        await Promise.all(notificationPromises);
+    }
+
     const updatedEvent = await Event.findById(eventId).populate(
       "organizer",
       "name"
@@ -259,7 +271,6 @@ exports.getEventById = async (req, res) => {
     if (!event) {
       return res.status(404).json({ message: "Evenimentul nu a fost găsit" });
     }
-    // Formatează ca în getAllEvents (pentru consistență în frontend)
     const formattedEvent = {
       id: event._id,
       title: event.title,
@@ -275,7 +286,6 @@ exports.getEventById = async (req, res) => {
       maxAttendees: event.maxAttendees,
       isAttending: false, 
       isSaved: false,
-      // --- MAP NEW FIELDS ---
       status: event.status,
       rejectionReason: event.rejectionReason,
       comments: event.comments
@@ -354,6 +364,14 @@ exports.rejectEvent = async (req, res) => {
 
         if (!event) return res.status(404).json({ message: "Event not found" });
 
+        await createNotification(
+            event.organizer,               
+            'status_update',               
+            'Eveniment Respins',        
+            `Evenimentul "${event.title}" a fost respins. Motiv: ${reason}`,
+            event._id   
+        );
+
         res.status(200).json(event);
     } catch (error) {
         res.status(500).json({ error: error.message });
@@ -425,19 +443,16 @@ exports.addComment = async (req, res) => {
             return res.status(400).json({ message: "Comment text is required" });
         }
 
-        // Find the Event
         const event = await Event.findById(eventId);
         if (!event) {
             return res.status(404).json({ message: "Event not found" });
         }
 
-        // Find the User (we need their name for the comment)
         const user = await User.findById(userId);
         if (!user) {
             return res.status(404).json({ message: "User not found" });
         }
 
-        // Create the comment object
         const newComment = {
             userId: user._id,
             userName: user.name,
@@ -445,7 +460,6 @@ exports.addComment = async (req, res) => {
             date: new Date()
         };
 
-        // Push to array and save
         event.comments.push(newComment);
         await event.save();
 

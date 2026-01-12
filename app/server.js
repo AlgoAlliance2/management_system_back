@@ -2,6 +2,8 @@ require("dotenv").config();
 const http = require('http');
 const mongoose = require('mongoose');
 const app = require('./app');
+const startCronJobs = require('./services/cronService'); 
+
 
 const hostname = "0.0.0.0";
 const port = process.env.PORT || 3001;
@@ -12,6 +14,8 @@ server.listen(port, hostname, () => {
     console.log(`Server is running on http://localhost:${port}`);
 });
 
+startCronJobs(); 
+console.log("Event scheduler is active.");
 
 
 mongoose.connect(process.env.MONGO_URI)

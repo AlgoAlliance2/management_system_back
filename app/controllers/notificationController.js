@@ -78,3 +78,24 @@ exports.createNotification = async (userId, type, title, message, eventId = null
         console.error("Failed to create notification:", error);
     }
 };
+
+exports.deleteNotification = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const userId = req.userId;
+
+        const deletedNotification = await Notification.findOneAndDelete({ 
+            _id: id, 
+            userId: userId 
+        });
+
+        if (!deletedNotification) {
+            return res.status(404).json({ message: "Notification not found or you do not have permission to delete it." });
+        }
+
+        res.status(200).json({ success: true, message: "Notification deleted" });
+    } catch (error) {
+        console.error("Error deleting notification:", error);
+        res.status(500).json({ message: "Server error" });
+    }
+};

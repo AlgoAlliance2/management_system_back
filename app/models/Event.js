@@ -12,7 +12,7 @@ const eventSchema = new mongoose.Schema({
     title: { type: String, required: true },
     description: { type: String },
     date: { type: Date, required: true }, // Data calendaristica
-    time: { type: String, required: true }, // Interval orar (ex: "14:00 - 16:00")
+    time: { type: String, required: true }, // Interval orar 
     location: { type: String, required: true },
     category: { 
         type: String, 
@@ -28,10 +28,10 @@ const eventSchema = new mongoose.Schema({
         enum: ['pending', 'approved', 'rejected'], 
         default: 'pending' // pending este default
     },
-    rejectionReason: { type: String }, // optional doar daca este refuzat
+    rejectionReason: { type: String }, // doar daca este refuzat
     comments: [commentSchema], // lista de comentarii
     
-    // Lista de studenti inscrisi (pentru calculul isAttending si numarul total)
+    // Lista de studenti inscrisi
     attendeesList: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }] 
 }, { versionKey: false, toJSON: { virtuals: true }, toObject: { virtuals: true } });
 

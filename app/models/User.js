@@ -9,7 +9,7 @@ const userSchema = new mongoose.Schema({
         enum: ['student', 'professor', 'organizer', 'admin'],
         default: 'student' 
     },
-    // Pentru funcționalitatea "Save/Bookmark"
+    // Pentru "Save/Bookmark"
     savedEvents: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Event' }]
 }, { versionKey: false });
 
