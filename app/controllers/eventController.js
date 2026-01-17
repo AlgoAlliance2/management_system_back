@@ -167,8 +167,12 @@ exports.deleteEvent = async (req, res) => {
       return res.status(404).json({ message: "Evenimentul nu a fost găsit" });
     }
 
-    // Verifica permisiunile
-    if (event.organizer.toString() !== userId) {
+    const user = await User.findById(userId);
+    
+    const isOrganizer = event.organizer.toString() === userId;
+    const isAdmin = user && user.role === 'admin';
+
+    if (!isOrganizer && !isAdmin) {
       return res.status(403).json({
         message: "Nu ai permisiunea să ștergi acest eveniment",
       });
@@ -190,7 +194,6 @@ exports.deleteEvent = async (req, res) => {
     res.status(500).json({ message: "Eroare server" });
   }
 };
-
 
 exports.updateEvent = async (req, res) => {
   try {
